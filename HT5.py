@@ -1,18 +1,20 @@
+#se importan las librerias
 import simpy
 import random
 import statistics 
 
 
-#se inicia el environment    
-opspersec = 1/3
+#se definen las caracteristicas de la computadora
 velocidadProce = 3
-processes = 200
+opspersec = 1/3
+processes = 25
 env = simpy.Environment() #ambiente de simulación
 ram2 = simpy.Container(env,init=100,capacity = 100) #se define la ram como tipo container
-cpu = simpy.Resource(env, capacity=2) #se define el cpu como tipo resource
+cpu = simpy.Resource(env, capacity=1) #se define el cpu como tipo resource
 waiting2 = simpy.Resource(env, capacity = 1)
+#se define la seed
 random.seed(3435)
-interval = 1
+interval = 10
 tiempo = []
 
 
@@ -42,7 +44,7 @@ class Process(object):
                 print('%5.1f Proceso #%i en cola esperando RAM' % (env.now, self.nombre))
             
            
-
+    #estado de ready en el que esta listo para correr y espera al CPU
     def ready(self):
         #Listo para correr, esperando a CPU
         print('%5.1f Proceso #%i admitido y listo para correr en CPU' % (env.now, self.nombre))
@@ -51,6 +53,7 @@ class Process(object):
             env.process(self.running())
             
 
+    #estado en el que el procesador ejecuta las instrucciones
     def running(self):
         #se solicita entrar al cpu
         with self.cpu.request() as req:
@@ -58,7 +61,7 @@ class Process(object):
             
             #se comienza a ejecutar las operaciones de 1 a 10 disminuyendolo en 3
             print('%5.1f El Proceso #%i, con %i instrucciones, se comenzó a ejecutar en el cpu en %i' % (env.now, self.nombre, self.instrucciones, env.now))
-            for i in range(velocidadProce):
+            for i in range(3):
                 if(self.instrucciones > 0):
                     self.instrucciones-=1
                     yield(env.timeout(opspersec))
@@ -79,25 +82,30 @@ class Process(object):
                 print("%5.1f Se envió el Proceso #%i a la cola de Ready en %5.1f" %(env.now, self.nombre, env.now))
         
             
+        
+    #estado en donde espera y hace operaciones de I/O regresando a ready
+    def waiting(self):
+        with self.waiting2.request() as waiting_queue:
+            yield waiting_queue
+            print('%5.1f Proceso #%i Haciendo operaciones I/O en %g' %(env.now, self.nombre, env.now))
+            yield env.timeout(random.randint(1, 10))#Hace operaciones por x tiempo
+            print('%5.1f Proceso #%i Termino operaciones I/O en %g' %(env.now, self.nombre, env.now))
+            env.process(self.ready())
+        
 
 
     
+#metodo que genera los procesos en el intervalo que se le indica
 def creator(env, total, interval, cpu, ram2, waiting2):
     for i in range(total):
         ins = random.randint(1, 10)
         ram = random.randint(1, 10)
         proc = Process(i, ram, ram2, cpu, waiting2, ins, env)
-        #env.process(proc)
-        time = random.expovariate(1 / interval)
+        time = random.expovariate(1.0/ interval)
         yield env.timeout(time)
        
         
 
 #SIMULACION
-#for i in range(processes):
-    #ins = random.randint(1, 10)
-    #ram = random.randint(1, 10)
-    #c=Process(round(i), ram, ram2, cpu, waiting2, ins, env)
 env.process(creator(env, processes, interval, cpu, ram2, waiting2))
-env.run(until=10000)
-stats()
+env.run(until=500)
