@@ -28,6 +28,7 @@ class Process(object):
         self.cpu = cpu
         self.waiting2=waiting2
         self.instrucciones=instrucciones
+        self.tiempo_in = 0
         self.action = env.process(self.new())
 
     #estado new
@@ -100,6 +101,14 @@ class Process(object):
             print('%5.1f Proceso #%i Instrucciones terminadas en %5.1f memoria actual %s' %(env.now, self.nombre, env.now,self.ram2.level))
         tiempo.append(env.now - self.tiempo_in)
 
+
+#metodo que sirve para generar las estadisticas   
+def stats():
+    media = sum(tiempo)/len(tiempo)
+    des = statistics.stdev(tiempo)
+    print("\nMedia del tiempo que permanecen los procesos: %f" %(media) )
+    print("Desviacion estandar de los tiempos que permanencen los procesos: %f" %des)
+
     
 #metodo que genera los procesos en el intervalo que se le indica
 def creator(env, total, interval, cpu, ram2, waiting2):
@@ -115,3 +124,4 @@ def creator(env, total, interval, cpu, ram2, waiting2):
 #SIMULACION
 env.process(creator(env, processes, interval, cpu, ram2, waiting2))
 env.run(until=500)
+stats()
