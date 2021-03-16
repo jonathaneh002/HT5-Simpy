@@ -6,7 +6,7 @@ import statistics
 
 #se definen las caracteristicas de la computadora
 velocidadProce = 3
-opspersec = 1/3
+opspersec = 1/velocidadProce
 processes = 25
 env = simpy.Environment() #ambiente de simulación
 ram2 = simpy.Container(env,init=100,capacity = 100) #se define la ram como tipo container
@@ -28,7 +28,6 @@ class Process(object):
         self.cpu = cpu
         self.waiting2=waiting2
         self.instrucciones=instrucciones
-        self.tiempo_in = 0
         self.action = env.process(self.new())
 
     #estado new
@@ -61,7 +60,7 @@ class Process(object):
             
             #se comienza a ejecutar las operaciones de 1 a 10 disminuyendolo en 3
             print('%5.1f El Proceso #%i, con %i instrucciones, se comenzó a ejecutar en el cpu en %i' % (env.now, self.nombre, self.instrucciones, env.now))
-            for i in range(3):
+            for i in range(velocidadProce):
                 if(self.instrucciones > 0):
                     self.instrucciones-=1
                     yield(env.timeout(opspersec))
@@ -92,7 +91,14 @@ class Process(object):
             print('%5.1f Proceso #%i Termino operaciones I/O en %g' %(env.now, self.nombre, env.now))
             env.process(self.ready())
         
-
+        
+        
+    #estado donde se ha finalizado el proceso
+    def terminated(self):
+        with self.ram2.put(self.ram) as asignRam:
+            yield asignRam #se le devuelve la ram utilizada
+            print('%5.1f Proceso #%i Instrucciones terminadas en %5.1f memoria actual %s' %(env.now, self.nombre, env.now,self.ram2.level))
+        tiempo.append(env.now - self.tiempo_in)
 
     
 #metodo que genera los procesos en el intervalo que se le indica
